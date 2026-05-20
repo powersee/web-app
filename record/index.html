@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0d9488">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="物品追踪">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230d9488'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' fill='white'%3E📋%3C/text%3E%3C/svg%3E">
+  <title>物品追踪</title>
+  <style>
+    /* ========== Reset & Variables ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #0d9488;
+      --primary-dark: #0f766e;
+      --primary-light: #ccfbf1;
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-secondary: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,.12);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-xs: 6px;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --orange: #f97316;
+      --red: #ef4444;
+      --danger: #dc2626;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    }
+    html, body {
+      height: 100%;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+    }
+
+    /* ========== Header ========== */
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 16px;
+      padding-top: calc(12px + var(--safe-top));
+      padding-bottom: calc(80px + var(--safe-bottom));
+      min-height: 100vh;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 4px 20px;
+    }
+    header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+    header h1 span {
+      margin-right: 6px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .header-btn {
+      background: var(--surface);
+      border: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: all .15s;
+    }
+    .header-btn:active { transform: scale(.92); }
+    .item-count {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* ========== Empty State ========== */
+    #empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      text-align: center;
+    }
+    #empty-state .icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    #empty-state h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    #empty-state p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ========== Item List ========== */
+    #item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .item-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      animation: fadeIn .25s ease;
+      position: relative;
+      overflow: hidden;
+      transition: transform .15s;
+    }
+    .item-card:active { transform: scale(.98); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Color bar on the left */
+    .item-card .color-bar {
+      width: 4px;
+      border-radius: 2px;
+      align-self: stretch;
+      flex-shrink: 0;
+    }
+    .item-card .color-bar.green { background: var(--green); }
+    .item-card .color-bar.yellow { background: var(--yellow); }
+    .item-card .color-bar.orange { background: var(--orange); }
+    .item-card .color-bar.red { background: var(--red); }
+
+    .item-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .item-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .item-date-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .item-days {
+      text-align: right;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .item-days .number {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+    }
+    .item-days .number.green { color: var(--green); }
+    .item-days .number.yellow { color: var(--yellow); }
+    .item-days .number.orange { color: var(--orange); }
+    .item-days .number.red { color: var(--red); }
+    .item-days .unit {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Item actions row */
+    .item-actions {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .item-action-btn {
+      border: none;
+      background: transparent;
+      padding: 4px 10px;
+      border-radius: var(--radius-xs);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .item-action-btn.reset {
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+    .item-action-btn.reset:active { background: #99f6e4; }
+    .item-action-btn.edit {
+      color: #6b7280;
+      background: #f3f4f6;
+    }
+    .item-action-btn.edit:active { background: #e5e7eb; }
+    .item-action-btn.delete {
+      color: var(--danger);
+      background: #fef2f2;
+    }
+    .item-action-btn.delete:active { background: #fecaca; }
+
+    /* ========== FAB ========== */
+    #fab {
+      position: fixed;
+      bottom: calc(24px + var(--safe-bottom));
+      right: max(24px, calc(50% + 240px - 24px));
+      left: auto;
+      transform: translateX(calc(50vw - 50%));
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-size: 28px;
+      font-weight: 400;
+      box-shadow: 0 4px 16px rgba(13, 148, 136, 0.4);
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    #fab:active { transform: translateX(calc(50vw - 50%)) scale(.9); box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3); }
+    @media (min-width: 480px) {
+      #fab { right: calc(50% - 240px + 24px); left: auto; transform: none; }
+      #fab:active { transform: scale(.9); }
+    }
+
+    /* ========== Modal / Bottom Sheet ========== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: all .25s;
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+    .overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 201;
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 0 24px calc(20px + var(--safe-bottom));
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.32,.72,0,1);
+      max-width: 480px;
+      margin: 0 auto;
+      box-shadow: var(--shadow-lg);
+    }
+    .modal.open { transform: translateY(0); }
+    .modal .handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: #d1d5db;
+      margin: 10px auto 12px;
+    }
+    .modal h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s;
+    }
+    .form-group input:focus {
+      border-color: var(--primary);
+      background: white;
+    }
+    .form-group input::placeholder { color: #94a3b8; }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 24px;
+    }
+    .modal-actions button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: var(--font);
+    }
+    .modal-actions button:active { transform: scale(.97); }
+    .btn-cancel {
+      background: var(--bg);
+      color: var(--text-secondary);
+    }
+    .btn-cancel:active { background: #e2e8f0; }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:active { background: var(--primary-dark); }
+    .btn-danger {
+      background: #fef2f2;
+      color: var(--danger);
+    }
+    .btn-danger:active { background: #fecaca; }
+
+    /* ========== Toast ========== */
+    #toast {
+      position: fixed;
+      bottom: calc(100px + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e293b;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      visibility: hidden;
+      transition: all .25s;
+      z-index: 300;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    #toast.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ========== Import Overlay ========== */
+    #import-input { display: none; }
+
+    /* ========== Confirmation Dialog ========== */
+    #confirm-dialog {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(.9);
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 24px;
+      max-width: 320px;
+      width: calc(100% - 48px);
+      z-index: 202;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all .2s;
+    }
+    #confirm-dialog.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    #confirm-dialog h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    #confirm-dialog p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    #confirm-dialog .modal-actions { margin-top: 0; }
+    .btn-danger-solid {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-danger-solid:active { background: #b91c1c; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <header>
+    <h1>物品追踪</h1>
+    <div class="header-actions">
+      <span class="item-count" id="item-count">0 件</span>
+      <button class="header-btn" id="export-btn" title="导出数据">↓</button>
+      <button class="header-btn" id="import-btn" title="导入数据">↑</button>
+    </div>
+  </header>
+
+  <!-- Empty State -->
+  <div id="empty-state">
+    <div class="icon">📋</div>
+    <h2>还没有记录</h2>
+    <p>点击右下角的 + 按钮<br>添加要追踪的物品吧</p>
+  </div>
+
+  <!-- Item List -->
+  <div id="item-list"></div>
+</div>
+
+<!-- FAB -->
+<button id="fab" aria-label="添加物品">+</button>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay"></div>
+
+<!-- Add/Edit Modal -->
+<div class="modal" id="modal">
+  <div class="handle"></div>
+  <h2 id="modal-title">添加物品</h2>
+  <form id="item-form" autocomplete="off">
+    <div class="form-group">
+      <label for="item-name">物品名称</label>
+      <input id="item-name" type="text" placeholder="例如：毛巾、床单" required>
+    </div>
+    <div class="form-group">
+      <label for="item-date">事件日期</label>
+      <input id="item-date" type="date" required>
+    </div>
+    <div class="form-group" id="desc-group" style="display:none;">
+      <label for="item-desc">备注（可选）</label>
+      <input id="item-desc" type="text" placeholder="例如：开始使用 / 上次清洗">
+    </div>
+    <input type="hidden" id="edit-id" value="">
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" id="modal-cancel">取消</button>
+      <button type="submit" class="btn-primary" id="modal-save">保存</button>
+    </div>
+  </form>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirm-dialog">
+  <h3>确定删除？</h3>
+  <p id="confirm-message">此操作不可撤销。</p>
+  <div class="modal-actions">
+    <button class="btn-cancel" id="confirm-cancel">取消</button>
+    <button class="btn-danger-solid" id="confirm-ok">删除</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Hidden file input -->
+<input type="file" id="import-input" accept=".json">
+
+<script>
+(function() {
+  'use strict';
+
+  // ==================== Data Store ====================
+  const STORAGE_KEY = 'item_tracker_data';
+
+  function getItems() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+
+  function saveItems(items) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }
+
+  function addItem(name, date, desc) {
+    const items = getItems();
+    items.unshift({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name: name.trim(),
+      date: date,
+      desc: desc ? desc.trim() : '',
+      createdAt: Date.now()
+    });
+    saveItems(items);
+    return items;
+  }
+
+  function updateItem(id, updates) {
+    const items = getItems();
+    const idx = items.findIndex(i => i.id === id);
+    if (idx === -1) return items;
+    items[idx] = { ...items[idx], ...updates };
+    saveItems(items);
+    return items;
+  }
+
+  function deleteItem(id) {
+    const items = getItems().filter(i => i.id !== id);
+    saveItems(items);
+    return items;
+  }
+
+  function resetItemDate(id) {
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10);
+    return updateItem(id, { date: dateStr });
+  }
+
+  // ==================== Helpers ====================
+  function daysSince(dateStr) {
+    const eventDate = new Date(dateStr + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Math.floor((today - eventDate) / 86400000);
+  }
+
+  function getColorClass(days) {
+    if (days <= 3) return 'green';
+    if (days <= 7) return 'yellow';
+    if (days <= 14) return 'orange';
+    return 'red';
+  }
+
+  function formatDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${y}年${parseInt(m)}月${parseInt(d)}日`;
+  }
+
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), 2000);
+  }
+
+  // ==================== Confirmation ====================
+  let confirmResolve = null;
+  function confirmDialog(msg) {
+    return new Promise((resolve) => {
+      document.getElementById('confirm-message').textContent = msg;
+      document.getElementById('confirm-dialog').classList.add('open');
+      overlay.classList.add('open');
+      confirmResolve = resolve;
+    });
+  }
+  document.getElementById('confirm-ok').addEventListener('click', () => {
+    document.getElementById('confirm-dialog').classList.remove('open');
+    overlay.classList.remove('open');
+    if (confirmResolve) confirmResolve(true);
+  });
+  document.getElementById('confirm-cancel').addEventListener('click', () => {
+    document.getElementById('confirm-dialog').classList.remove('open');
+    overlay.classList.remove('open');
+    if (confirmResolve) confirmResolve(false);
+  });
+
+  // ==================== Render ====================
+  const elList = document.getElementById('item-list');
+  const elEmpty = document.getElementById('empty-state');
+  const elCount = document.getElementById('item-count');
+
+  function render() {
+    const items = getItems();
+    elCount.textContent = `${items.length} 件`;
+
+    if (items.length === 0) {
+      elList.innerHTML = '';
+      elEmpty.style.display = 'flex';
+      return;
+    }
+    elEmpty.style.display = 'none';
+
+    // Sort by days descending (oldest first)
+    const sorted = [...items].sort((a, b) => daysSince(b.date) - daysSince(a.date));
+
+    elList.innerHTML = sorted.map(item => {
+      const days = daysSince(item.date);
+      const color = getColorClass(days);
+      const dateLabel = item.desc ? `${item.desc}` : '记录日期';
+      return `
+        <div class="item-card" data-id="${item.id}">
+          <div class="color-bar ${color}"></div>
+          <div class="item-info">
+            <div class="item-name">${escapeHtml(item.name)}</div>
+            <div class="item-date-label">${dateLabel} · ${formatDate(item.date)}</div>
+            <div class="item-actions">
+              <button class="item-action-btn reset" data-action="reset">重置为今天</button>
+              <button class="item-action-btn edit" data-action="edit">编辑</button>
+              <button class="item-action-btn delete" data-action="delete">删除</button>
+            </div>
+          </div>
+          <div class="item-days">
+            <div class="number ${color}">${days < 0 ? 0 : days}</div>
+            <div class="unit">${days < 0 ? '还未到' : '天前'}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ==================== Modal ====================
+  const modal = document.getElementById('modal');
+  const overlay = document.getElementById('overlay');
+  const modalTitle = document.getElementById('modal-title');
+  const itemName = document.getElementById('item-name');
+  const itemDate = document.getElementById('item-date');
+  const itemDesc = document.getElementById('item-desc');
+  const descGroup = document.getElementById('desc-group');
+  const editId = document.getElementById('edit-id');
+  const form = document.getElementById('item-form');
+
+  function openModal(item) {
+    if (item) {
+      modalTitle.textContent = '编辑物品';
+      itemName.value = item.name;
+      itemDate.value = item.date;
+      itemDesc.value = item.desc || '';
+      editId.value = item.id;
+      descGroup.style.display = 'block';
+    } else {
+      modalTitle.textContent = '添加物品';
+      itemName.value = '';
+      const today = new Date().toISOString().slice(0, 10);
+      itemDate.value = today;
+      itemDesc.value = '';
+      editId.value = '';
+      descGroup.style.display = 'none';
+    }
+    modal.classList.add('open');
+    overlay.classList.add('open');
+    setTimeout(() => itemName.focus(), 300);
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+    overlay.classList.remove('open');
+  }
+
+  document.getElementById('modal-cancel').addEventListener('click', closeModal);
+  overlay.addEventListener('click', closeModal);
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = itemName.value.trim();
+    const date = itemDate.value;
+    const desc = itemDesc.value.trim();
+    if (!name || !date) return;
+
+    const id = editId.value;
+    let items;
+    if (id) {
+      items = updateItem(id, { name, date, desc: desc || '' });
+      showToast('已更新');
+    } else {
+      items = addItem(name, date, desc);
+      showToast('已添加');
+    }
+    closeModal();
+    render();
+  });
+
+  // ==================== Event Delegation ====================
+  elList.addEventListener('click', (e) => {
+    const btn = e.target.closest('.item-action-btn');
+    if (!btn) return;
+
+    const card = btn.closest('.item-card');
+    if (!card) return;
+    const id = card.dataset.id;
+    const action = btn.dataset.action;
+    const items = getItems();
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    if (action === 'reset') {
+      resetItemDate(id);
+      render();
+      showToast(`「${item.name}」已重置为今天`);
+    } else if (action === 'edit') {
+      openModal(item);
+    } else if (action === 'delete') {
+      confirmDialog(`确定要删除「${item.name}」吗？`).then(ok => {
+        if (ok) {
+          deleteItem(id);
+          render();
+          showToast(`已删除「${item.name}」`);
+        }
+      });
+    }
+  });
+
+  // ==================== FAB ====================
+  document.getElementById('fab').addEventListener('click', () => openModal(null));
+
+  // ==================== Export / Import ====================
+  document.getElementById('export-btn').addEventListener('click', () => {
+    const items = getItems();
+    if (items.length === 0) {
+      showToast('还没有数据可导出');
+      return;
+    }
+    const data = { version: 1, exportedAt: new Date().toISOString(), items };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `物品追踪_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('导出成功');
+  });
+
+  const importInput = document.getElementById('import-input');
+  document.getElementById('import-btn').addEventListener('click', () => {
+    importInput.click();
+  });
+  importInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!data.items || !Array.isArray(data.items)) {
+          showToast('文件格式不正确');
+          return;
+        }
+        // Validate items
+        const validItems = data.items.filter(i => i.name && i.date);
+        if (validItems.length === 0) {
+          showToast('文件中没有有效的数据');
+          return;
+        }
+        // Merge: append imported items
+        const existing = getItems();
+        const merged = [...validItems, ...existing];
+        saveItems(merged);
+        render();
+        showToast(`导入了 ${validItems.length} 条记录`);
+      } catch {
+        showToast('文件解析失败');
+      }
+    };
+    reader.readAsText(file);
+    importInput.value = '';
+  });
+
+  // ==================== Init ====================
+  // Set default date for new items
+  (function initDate() {
+    const today = new Date().toISOString().slice(0, 10);
+    itemDate.value = today;
+  })();
+
+  render();
+
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
