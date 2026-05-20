@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物品存放记录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .form-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: #4a90d9;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #3a7bc8;
+        }
+
+        .btn-primary:active {
+            background: #2d6ab8;
+        }
+
+        .search-bar {
+            margin-bottom: 15px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .item-list {
+            list-style: none;
+        }
+
+        .item-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .item-location {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-edit {
+            background: #e8f4ff;
+            color: #4a90d9;
+        }
+
+        .btn-delete {
+            background: #ffe8e8;
+            color: #d94a4a;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .modal h2 {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .modal .btn {
+            margin-top: 10px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        .btn-secondary {
+            background: #e8e8e8;
+            color: #555;
+        }
+
+        .btn-secondary:hover {
+            background: #d8d8d8;
+        }
+
+        .stats {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stats-count {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4a90d9;
+        }
+
+        .stats-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .backup-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .backup-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .backup-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .backup-buttons .btn {
+            flex: 1;
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #4a90d9;
+            color: #4a90d9;
+        }
+
+        .btn-outline:hover {
+            background: #e8f4ff;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+
+            .form-card, .item-card {
+                padding: 14px;
+            }
+
+            .item-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .item-actions {
+                margin-top: 12px;
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 物品存放记录</h1>
+
+        <div class="stats">
+            <div class="stats-count" id="totalCount">0</div>
+            <div class="stats-label">共记录物品数</div>
+        </div>
+
+        <div class="form-card">
+            <div class="form-group">
+                <label>物品名称</label>
+                <input type="text" id="itemName" placeholder="请输入物品名称">
+            </div>
+            <div class="form-group">
+                <label>存放位置</label>
+                <input type="text" id="itemLocation" placeholder="请输入存放位置">
+            </div>
+            <button class="btn btn-primary" id="addBtn">添加记录</button>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="搜索物品...">
+        </div>
+
+        <ul class="item-list" id="itemList"></ul>
+
+        <div class="backup-section">
+            <div class="backup-title">数据备份 (建议定期备份，防止数据丢失)</div>
+            <div class="backup-buttons">
+                <button class="btn btn-outline" id="exportBtn">📤 导出数据</button>
+                <button class="btn btn-outline" id="importBtn">📥 导入数据</button>
+                <input type="file" id="importFile" accept=".json">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <h2>修改记录</h2>
+            <div class="form-group">
+                <label>物品名称</label>
+                <input type="text" id="editName">
+            </div>
+            <div class="form-group">
+                <label>存放位置</label>
+                <input type="text" id="editLocation">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancelEdit">取消</button>
+                <button class="btn btn-primary" id="saveEdit">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal">
+            <h2>确认删除</h2>
+            <p style="margin: 15px 0; color: #666;">确定要删除这个物品记录吗？</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancelDelete">取消</button>
+                <button class="btn btn-primary" style="background: #d94a4a;" id="confirmDelete">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'itemStorage';
+
+        let items = [];
+        let currentEditIndex = null;
+        let currentDeleteIndex = null;
+
+        function loadItems() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            items = data ? JSON.parse(data) : [];
+            renderItems();
+            updateStats();
+        }
+
+        function saveItems() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('totalCount').textContent = items.length;
+        }
+
+        function renderItems(filter = '') {
+            const list = document.getElementById('itemList');
+            const searchInput = document.getElementById('searchInput');
+            filter = searchInput.value.toLowerCase();
+
+            const filteredItems = items.filter(item => {
+                if (!filter) return true;
+                return item.name.toLowerCase().includes(filter) || 
+                       item.location.toLowerCase().includes(filter);
+            });
+
+            if (filteredItems.length === 0) {
+                list.innerHTML = '<div class="empty-state">' + 
+                    (filter ? '没有找到匹配的物品' : '还没有记录，点击上方添加') + 
+                    '</div>';
+                return;
+            }
+
+            list.innerHTML = filteredItems.map((item, index) => {
+                const realIndex = items.indexOf(item);
+                return '<li class="item-card">' +
+                    '<div class="item-info">' +
+                    '<div class="item-name">' + escapeHtml(item.name) + '</div>' +
+                    '<div class="item-location">📍 ' + escapeHtml(item.location) + '</div>' +
+                    '</div>' +
+                    '<div class="item-actions">' +
+                    '<button class="btn-icon btn-edit" onclick="openEditModal(' + realIndex + ')">✏️</button>' +
+                    '<button class="btn-icon btn-delete" onclick="openDeleteModal(' + realIndex + ')">🗑️</button>' +
+                    '</div>' +
+                    '</li>';
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function addItem() {
+            const name = document.getElementById('itemName').value.trim();
+            const location = document.getElementById('itemLocation').value.trim();
+
+            if (!name) {
+                alert('请输入物品名称');
+                return;
+            }
+            if (!location) {
+                alert('请输入存放位置');
+                return;
+            }
+
+            items.unshift({ name, location, timestamp: Date.now() });
+            saveItems();
+            renderItems();
+
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemLocation').value = '';
+            document.getElementById('itemName').focus();
+        }
+
+        function openEditModal(index) {
+            currentEditIndex = index;
+            const item = items[index];
+            document.getElementById('editName').value = item.name;
+            document.getElementById('editLocation').value = item.location;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            currentEditIndex = null;
+        }
+
+        function saveEdit() {
+            const name = document.getElementById('editName').value.trim();
+            const location = document.getElementById('editLocation').value.trim();
+
+            if (!name || !location) {
+                alert('请填写完整信息');
+                return;
+            }
+
+            items[currentEditIndex] = { 
+                name, 
+                location, 
+                timestamp: items[currentEditIndex].timestamp 
+            };
+            saveItems();
+            renderItems();
+            closeEditModal();
+        }
+
+        function openDeleteModal(index) {
+            currentDeleteIndex = index;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('active');
+            currentDeleteIndex = null;
+        }
+
+        function confirmDelete() {
+            items.splice(currentDeleteIndex, 1);
+            saveItems();
+            renderItems();
+            closeDeleteModal();
+        }
+
+        function exportData() {
+            const data = JSON.stringify(items, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '物品存放记录_' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (!Array.isArray(imported)) {
+                        alert('文件格式不正确');
+                        return;
+                    }
+                    if (!confirm('导入将覆盖现有数据，确定继续吗？')) return;
+                    items = imported;
+                    saveItems();
+                    renderItems();
+                    alert('导入成功！共 ' + items.length + ' 条记录');
+                } catch (err) {
+                    alert('文件解析失败: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        document.getElementById('addBtn').addEventListener('click', addItem);
+
+        document.getElementById('itemName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('itemLocation').focus();
+            }
+        });
+
+        document.getElementById('itemLocation').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addItem();
+            }
+        });
+
+        document.getElementById('searchInput').addEventListener('input', function() {
+            renderItems();
+        });
+
+        document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
+        document.getElementById('saveEdit').addEventListener('click', saveEdit);
+
+        document.getElementById('cancelDelete').addEventListener('click', closeDeleteModal);
+        document.getElementById('confirmDelete').addEventListener('click', confirmDelete);
+
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
+        });
+
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteModal();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeEditModal();
+                closeDeleteModal();
+            }
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+        document.getElementById('importBtn').addEventListener('click', function() {
+            document.getElementById('importFile').click();
+        });
+        document.getElementById('importFile').addEventListener('change', importData);
+
+        loadItems();
+    </script>
+</body>
+</html>
